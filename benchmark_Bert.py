@@ -77,9 +77,16 @@ def get_parser():
         choices=["mlm", "classification", "token_classification", "qa"],
         help="Type of task to benchmark (mlm, classification, token_classification, qa)",
     )
+    parser.add_argument(
+        "--optimization",
+        type=str,
+        default="flash_attention_2",
+        choices=["flash_attention_2", "sdpa"],
+        help="Type of optimization method (flash_attention_2, sdpa)",
+    )
     return parser
 
-def load_model(task, use_cuda, use_half):
+def load_model(task, optimization, use_cuda, use_half):
     model_class = {
         "mlm": BertModel,  # Using BertModel as a stand-in for BertForMaskedLM for simplicity
         "classification": BertForSequenceClassification,
@@ -87,20 +94,13 @@ def load_model(task, use_cuda, use_half):
         "qa": BertForQuestionAnswering
     }
     model_name = {
-        "mlm": "google-bert/bert-base-uncased",
+        "mlm": "bert-large-uncased",# "google-bert/bert-base-uncased"
         "classification": "textattack/bert-base-uncased-yelp-polarity",
         "token_classification": "dbmdz/bert-large-cased-finetuned-conll03-english",
         "qa": "deepset/bert-base-cased-squad2"
     }
-    # if task == "classification":
-    #     model_hf = model_class[task].from_pretrained(model_name[task], torch_dtype=torch.float16 if use_half else None, num_labels=2)
-    #     model_bt = model_class[task].from_pretrained(model_name[task], torch_dtype=torch.float16 if use_half else None, num_labels=2, attn_implementation="flash_attention_2")
-    # elif task == "token_classification":
-    #     model_hf = model_class[task].from_pretrained(model_name[task], torch_dtype=torch.float16 if use_half else None, num_labels=10)
-    #     model_bt = model_class[task].from_pretrained(model_name[task], torch_dtype=torch.float16 if use_half else None, num_labels=10, attn_implementation="flash_attention_2")
-    # else:
-    model_hf = model_class[task].from_pretrained(model_name[task], torch_dtype=torch.float16 if use_half else None)
-    model_bt = model_class[task].from_pretrained(model_name[task], torch_dtype=torch.float16 if use_half else None, attn_implementation="flash_attention_2")
+    model_hf = model_class[task].from_pretrained(model_name[task], torch_dtype=torch.float16 if use_half else None, attn_implementation="eager")
+    model_bt = model_class[task].from_pretrained(model_name[task], torch_dtype=torch.float16 if use_half else None, attn_implementation=optimization)
     if use_cuda:
         model_hf = model_hf.to("cuda:0")
         model_bt = model_bt.to("cuda:0")
@@ -198,17 +198,7 @@ def benchmark(model, input_ids, masks, num_batches, task, additional_inputs=None
         torch.cuda.synchronize()
 
     # benchmark
-    if task == "mlm":
-        total_time, max_mem = timing_cuda(model, task, num_batches, input_ids, masks, additional_inputs)
-    elif task in ["classification", "token_classification"]:
-        total_time, max_mem = timing_cuda(model, task, num_batches, input_ids, masks, additional_inputs)
-    elif task == "qa":
-        total_time, max_mem = timing_cuda(model, task, num_batches, input_ids, masks, additional_inputs)
-
-    # if is_decoder:
-    #     total_time, max_mem = timing_cuda(model, num_batches, input_ids, masks, is_decoder, gen_config)
-    # else:
-    #     total_time, max_mem = timing_cuda(model, num_batches, input_ids, masks, is_decoder)
+    total_time, max_mem = timing_cuda(model, task, num_batches, input_ids, masks, additional_inputs)
 
     return total_time, max_mem
 
@@ -220,7 +210,7 @@ if __name__ == "__main__":
 
     if args.sweep:
         BATCH_SIZES = [1, 2, 4, 8, 16, 32, 64, 128]
-        SEQ_LEN = [512]
+        SEQ_LEN = [128, 256, 512]
     else:
         BATCH_SIZES = [args.batch_size]
         SEQ_LEN = [args.max_seqlen]
@@ -233,10 +223,9 @@ if __name__ == "__main__":
     if not hasattr(tokenizer, "pad_token") or tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
+    hf_model, bt_model = load_model(args.task, args.optimization, args.use_cuda, args.use_half)
 
-    hf_model, bt_model = load_model(args.task, args.use_cuda, args.use_half)
-
-    output_name = "results/log_{}_{}.csv".format(args.model_name.replace("/", "-"), args.task)
+    output_name = "results/log_Bert_{}_{}.csv".format(args.optimization, args.task)
     output_file = open(output_name, "w")
     output_file.write(
         "num_batches, batch_size, seq_len, is cuda, is half, use mask, pad percentage, Latency eager (ms), Latency BT (ms), Speedup (%), Mem eager (MB), Mem BT (MB), Mem saved (%)\n"
