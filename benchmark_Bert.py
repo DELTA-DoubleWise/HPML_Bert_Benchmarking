@@ -35,12 +35,6 @@ def get_parser():
         help="Input padded sequence length.",
     )
     parser.add_argument(
-        "--model-name",
-        type=str,
-        default="bert-large-uncased",
-        help="",
-    )
-    parser.add_argument(
         "--seqlen-stdev",
         type=int,
         default=10,

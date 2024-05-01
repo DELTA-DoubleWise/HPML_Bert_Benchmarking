@@ -1,1 +1,1 @@
-CUDA_VISIBLE_DEVICES=0 python benchmarking_new.py --use-half --use-cuda --num-batches 10 --sweep --task classification
+CUDA_VISIBLE_DEVICES=0 python benchmark_Bert.py --use-half --use-cuda --num-batches 10 --task classification --sweep 
