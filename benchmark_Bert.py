@@ -289,17 +289,30 @@ if __name__ == "__main__":
 
                 with torch.inference_mode():
                     # raise error if no optimized kernel is available
-                    with torch.backends.cuda.sdp_kernel(
-                        enable_flash=True, enable_math=True, enable_mem_efficient=True
-                    ):
-                        total_bt_time, max_mem_bt = benchmark(
-                            bt_model,
-                            input_ids,
-                            masks,
-                            args.num_batches,
-                            args.task,
-                            additional_inputs
-                        )
+                    if args.optimization == "flash_attention_2":
+                        with torch.backends.cuda.sdp_kernel(
+                            enable_flash=True, enable_math=True, enable_mem_efficient=True
+                        ):
+                            total_bt_time, max_mem_bt = benchmark(
+                                bt_model,
+                                input_ids,
+                                masks,
+                                args.num_batches,
+                                args.task,
+                                additional_inputs
+                            )
+                    else:
+                        with torch.backends.cuda.sdp_kernel(
+                            enable_flash=False, enable_math=False, enable_mem_efficient=True
+                        ):
+                            total_bt_time, max_mem_bt = benchmark(
+                                bt_model,
+                                input_ids,
+                                masks,
+                                args.num_batches,
+                                args.task,
+                                additional_inputs
+                            )
 
                 total_hf_time = all_total_hf_time[(bs, seq_len)]
                 max_mem_eager = all_max_mem_eager[(bs, seq_len)]
