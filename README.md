@@ -106,9 +106,10 @@ Follow these steps to set up the environment and install the required packages:
    pip install torch tqdm numpy pandas seaborn PIL matplotlib
    ```
 
-## Files
+## Main Files to Execute
 
 - `benchmark_Bert.py`: The main Python script that performs the benchmarking of BERT models.
+- `plot.py`: The main Python script that plots the results
 
 ## Usage
 
