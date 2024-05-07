@@ -1,100 +1,109 @@
 import argparse
-
 import numpy as np
 import pandas as pd
 import torch
 from tqdm import tqdm
-# from transformers import AutoModel, AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoTokenizer, GenerationConfig
 from transformers import BertTokenizer, BertModel, GenerationConfig, BertForSequenceClassification, BertForTokenClassification, BertForQuestionAnswering
 
 
 def get_parser():
+    """Configure and return an argument parser for the benchmarking script."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--num-batches",
         type=int,
         default=50,
-        help="",
+        help="Number of batches to process."
     )
     parser.add_argument(
         "--batch-size",
         type=int,
         default=64,
-        help="",
+        help="Number of samples per batch."
     )
     parser.add_argument(
         "--avg-seqlen",
         type=int,
         default=512,
-        help="True average sequence length (the rest will be padding).",
+        help="True average sequence length (the rest will be padding)."
     )
     parser.add_argument(
         "--max-seqlen",
         type=int,
         default=512,
-        help="Input padded sequence length.",
+        help="Maximum sequence length for padding."
     )
     parser.add_argument(
         "--seqlen-stdev",
         type=int,
         default=10,
-        help="",
+        help="Standard deviation of sequence length."
     )
     parser.add_argument(
         "--use-cuda",
         default=True,
         action="store_true",
+        help="Use CUDA if available."
     )
     parser.add_argument(
         "--use-half",
         default=True,
         action="store_true",
+        help="Use half precision (float16) for calculations."
     )
     parser.add_argument(
         "--use-mask",
         action="store_true",
+        help="Use an attention mask for the inputs."
     )
     parser.add_argument(
         "--sweep",
         action="store_true",
+        help="Perform a sweep over different batch sizes and sequence lengths."
     )
     parser.add_argument(
         "--max_token",
         type=int,
         default=100,
-        help="Number of new tokens, for autoregressive models using generate.",
+        help="Number of new tokens, for autoregressive models using generate."
     )
     parser.add_argument(
         "--task",
         type=str,
         default="mlm",
         choices=["mlm", "classification", "token_classification", "qa"],
-        help="Type of task to benchmark (mlm, classification, token_classification, qa)",
+        help="Type of task to benchmark (mlm, classification, token_classification, qa)"
     )
     parser.add_argument(
         "--optimization",
         type=str,
         default="flash_attention_2",
         choices=["flash_attention_2", "sdpa"],
-        help="Type of optimization method (flash_attention_2, sdpa)",
+        help="Type of optimization method (flash_attention_2, sdpa)"
     )
     return parser
 
 def load_model(task, optimization, use_cuda, use_half):
+    """Load a specified BERT model with optional CUDA and precision settings."""
+    # Mapping of tasks to their respective model classes
     model_class = {
-        "mlm": BertModel,  # Using BertModel as a stand-in for BertForMaskedLM for simplicity
+        "mlm": BertModel,
         "classification": BertForSequenceClassification,
         "token_classification": BertForTokenClassification,
         "qa": BertForQuestionAnswering
     }
+    # Pre-defined pretrained model names for each task
     model_name = {
         "mlm": "bert-large-uncased",# "google-bert/bert-base-uncased"
         "classification": "textattack/bert-base-uncased-yelp-polarity",
         "token_classification": "dbmdz/bert-large-cased-finetuned-conll03-english",
         "qa": "deepset/bert-base-cased-squad2"
     }
+    # Load models with and without specified optimization
     model_hf = model_class[task].from_pretrained(model_name[task], torch_dtype=torch.float16 if use_half else None, attn_implementation="eager")
+    # Load models with and with specified optimization
     model_bt = model_class[task].from_pretrained(model_name[task], torch_dtype=torch.float16 if use_half else None, attn_implementation=optimization)
+    # Move models to CUDA if specified
     if use_cuda:
         model_hf = model_hf.to("cuda:0")
         model_bt = model_bt.to("cuda:0")
@@ -105,7 +114,7 @@ def get_batch(task, batch_size, avg_seqlen, max_sequence_length, seqlen_stdev, v
     r"""
     Utility function to generate a batch of random sequences, together with their
     attention mask and lengths.
-    Copied from: https://github.com/HamidShojanazeri/transformers/blob/ddf0299a13e7c4f54459a0731abd80204a1078f5/examples/pytorch/benchmarking/benchmark_bettertransformer.py#L149
+    Inspired by: https://github.com/HamidShojanazeri/transformers/blob/ddf0299a13e7c4f54459a0731abd80204a1078f5/examples/pytorch/benchmarking/benchmark_bettertransformer.py#L149
     """
     mean_tensor = torch.Tensor([avg_seqlen]).expand(batch_size)
     stdev_tensor = torch.Tensor([seqlen_stdev]).expand(batch_size)
@@ -116,7 +125,7 @@ def get_batch(task, batch_size, avg_seqlen, max_sequence_length, seqlen_stdev, v
         (batch_size, max_sequence_length),
         pad_idx,
     )
-    # lengths[0:2] = max_sequence_length-1
+
     for i in range(batch_size):
         tokens[i, : lengths[i]] = torch.randint(
             pad_idx + 1,
@@ -131,13 +140,12 @@ def get_batch(task, batch_size, avg_seqlen, max_sequence_length, seqlen_stdev, v
         mask[i, : lengths[i]] = 1
 
     if task == "classification":
-        labels = torch.randint(0, 2, (batch_size,))  # Example: 10 possible classes
+        labels = torch.randint(0, 2, (batch_size,))  # Binary classification
         return tokens, lengths, mask, labels
     elif task == "token_classification":
         labels = torch.randint(0, 9, (batch_size, max_sequence_length)) 
         return tokens, lengths, mask, labels
     elif task == "qa":
-        # Generate start_positions and end_positions for simplicity
         start_positions = torch.zeros((batch_size,), dtype=torch.long)
         end_positions = torch.zeros((batch_size,), dtype=torch.long)
         return tokens, lengths, mask, start_positions, end_positions
@@ -146,11 +154,10 @@ def get_batch(task, batch_size, avg_seqlen, max_sequence_length, seqlen_stdev, v
 
 
 def timing_cuda(model, task, num_batches, input_ids, masks, additional_inputs=None):
+    """Measure the CUDA execution time and memory usage for the model over a number of batches."""
 
     torch.cuda.reset_peak_memory_stats(device)
     torch.cuda.synchronize()
-
-    # We need NOT call torch.cuda.empty_cache() here as it appears to negate the warmup.
 
     latencies = []
     for _ in tqdm(range(num_batches)):
@@ -170,7 +177,7 @@ def timing_cuda(model, task, num_batches, input_ids, masks, additional_inputs=No
         torch.cuda.synchronize()
 
         latency_ms = start_event.elapsed_time(end_event)
-        # print(f"\nLatency per token: {latency_ms / generation_config.min_new_tokens:.3f} ms")
+
         latencies.append(latency_ms)
 
     max_memory = torch.cuda.max_memory_allocated(device)
@@ -179,19 +186,18 @@ def timing_cuda(model, task, num_batches, input_ids, masks, additional_inputs=No
 
 
 def benchmark(model, input_ids, masks, num_batches, task, additional_inputs=None):
-
-    # warmup
+    """Conduct a benchmark by warming up the model and then timing its performance."""
+    
+    # Warmup phase: run the model once before timing to ensure all caches are primed
     if task == "mlm":
-        outputs = model(input_ids, attention_mask=masks)
-        torch.cuda.synchronize()
+        outputs = model(input_ids, attention_mask=masks)  
     elif task in ["classification", "token_classification"]:
         outputs = model(input_ids, attention_mask=masks, labels=additional_inputs[0])
-        torch.cuda.synchronize()
     elif task == "qa":
         outputs = model(input_ids, attention_mask=masks, start_positions=additional_inputs[0], end_positions=additional_inputs[1])
-        torch.cuda.synchronize()
+    torch.cuda.synchronize()
 
-    # benchmark
+    # Actual benchmark
     total_time, max_mem = timing_cuda(model, task, num_batches, input_ids, masks, additional_inputs)
 
     return total_time, max_mem
@@ -232,8 +238,6 @@ if __name__ == "__main__":
         for seq_len in tqdm(SEQ_LEN):
             for pad_perc in tqdm(PAD_PERCENTAGES):
                 print(f"-- Running: bs={bs}, seq_len={seq_len}")
-                # current_std = int(seq_len*pad_perc)
-                # max_seqlen = seq_len + current_std
                 max_seqlen = seq_len
                 mean_seqlen = int((1 - pad_perc) * max_seqlen)
                 batch_data = get_batch(
@@ -272,7 +276,6 @@ if __name__ == "__main__":
                 mean_seqlen = int((1 - pad_perc) * max_seqlen)
                 batch_data = get_batch(
                     args.task, bs, mean_seqlen, max_seqlen, args.seqlen_stdev, vocab_size=hf_model.config.vocab_size
-                    # bs, mean_seqlen, max_seqlen, args.seqlen_stdev, vocab_size=bt_model.config.vocab_size
                 )
 
                 input_ids, _, masks = batch_data[:3]
@@ -302,6 +305,7 @@ if __name__ == "__main__":
                                 additional_inputs
                             )
                     else:
+                        # if use sdpa, only enable memory efficient attention method
                         with torch.backends.cuda.sdp_kernel(
                             enable_flash=False, enable_math=False, enable_mem_efficient=True
                         ):
