@@ -164,7 +164,7 @@ python plot.py
 ##### Masked Language Modeling
 ![MLM](mlm/combined_plot.png)
 
-#### Observation
+## Observation
 - For all four tasks, the trend of the results presents a similar pattern. In this section, we will use the result for the task of masked language modeling (mlm) to interpret the result. For other tasks, we put the plot in the appendix.
 - Impacts of Batch Size
   - Through our experiments, we observed that batch size significantly influences the efficiency gains in inference time and memory usage when using Flash Attention 2. Specifically, as the batch size increases, the speedup in inference time becomes more pronounced. For instance, with a sequence length of 512—a common configuration for the BERT model—the inference time with a batch size of 1 is longer than that of the standard attention method. However, as the batch size expands, we notice a considerable improvement in performance. As shown in the figure, there is a 30\% speedup at a batch size of 4, and this enhancement grows to between 50\% and 80\% with varying padding percentages as the batch size continues to increase. Similarly, memory savings also escalate with larger batch sizes, especially evident when the sequence lengths are 256 and 512. In these scenarios, we observe a monotonically increasing relationship between batch size and memory saved.
