@@ -1,3 +1,16 @@
+# Transformers
+
+We submitted another Github Repo, which is forked and modified based on the official HuggingFace Transformer Library. Therefore, we won't modify the README in that directory as the usecase should be exactly the same as the original Transformers. We noted the files that we made changes to here for your reference:
+
+    -  src/transformers/models/align/modeling_align.py
+    -  src/transformers/models/altclip/modeling_altclip.py
+    -  src/transformers/models/bert/modeling_bert.py
+    -  src/transformers/models/bert_generation/modeling_bert_generation.py
+    -  src/transformers/models/bridgetower/modeling_bridgetower.py
+    -  src/transformers/models/camembert/modeling_camembert.py
+    -  tests/models/bert/test_modeling_bert.py
+
+
 # HPML_Bert_Benchmarking
 
 This repository contains scripts for benchmarking BERT models across different tasks such as masked language modeling (MLM), sequence classification, token classification, and question answering. The scripts utilize the Hugging Face Transformers library (which we added the support for FlashAttention2) to load pre-trained models and perform benchmarks on specified tasks with options for various configurations.
