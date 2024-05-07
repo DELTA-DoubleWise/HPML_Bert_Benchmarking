@@ -4,6 +4,69 @@ This repository contains scripts for benchmarking BERT models across different t
 
 ## Code outline
 
+HPML_BERT_BENCHMARKING/
+├── classification/                    # Classification task results
+│   ├── combined_plot.png              # Combined plot for classification task
+│   ├── log_Bert_flash_attention_2_classification.csv  # Benchmark results for classification task using FlashAttention2
+│   ├── log_Bert_sdpa_classification.csv              # Benchmark results for classification task using SDPA
+│   ├── SeqLen_128_Mem_saved_(%).png   # Memory saved plot for classification task
+│   ├── SeqLen_128_Speedup_(%).png     # Speedup plot for classification task
+│   ├── SeqLen_256_Mem_saved_(%).png   # Memory saved plot for classification task
+│   ├── SeqLen_256_Speedup_(%).png     # Speedup plot for classification task
+│   ├── SeqLen_512_Mem_saved_(%).png   # Memory saved plot for classification task
+│   └── SeqLen_512_Speedup_(%).png     # Speedup plot for classification task
+│
+├── mlm/                               # Masked Language Modeling task results
+│   ├── combined_plot.png              # Combined plot for MLM task
+│   ├── log_Bert_flash_attention_2_mlm.csv            # Benchmark results for MLM task using FlashAttention2
+│   ├── log_Bert_sdpa_mlm.csv                         # Benchmark results for MLM task using SDPA
+│   ├── SeqLen_128_Mem_saved_(%).png   # Memory saved plot for MLM task
+│   ├── SeqLen_128_Speedup_(%).png     # Speedup plot for MLM task
+│   ├── SeqLen_256_Mem_saved_(%).png   # Memory saved plot for MLM task
+│   ├── SeqLen_256_Speedup_(%).png     # Speedup plot for MLM task
+│   ├── SeqLen_512_Mem_saved_(%).png   # Memory saved plot for MLM task
+│   └── SeqLen_512_Speedup_(%).png     # Speedup plot for MLM task
+│
+├── qa/                                # Question Answering task results
+│   ├── combined_plot.png              # Combined plot for QA task
+│   ├── log_Bert_flash_attention_2_qa.csv             # Benchmark results for QA task using FlashAttention2
+│   ├── log_Bert_sdpa_qa.csv                          # Benchmark results for QA task using SDPA
+│   ├── SeqLen_128_Mem_saved_(%).png   # Memory saved plot for QA task
+│   ├── SeqLen_128_Speedup_(%).png     # Speedup plot for QA task
+│   ├── SeqLen_256_Mem_saved_(%).png   # Memory saved plot for QA task
+│   ├── SeqLen_256_Speedup_(%).png     # Speedup plot for QA task
+│   ├── SeqLen_512_Mem_saved_(%).png   # Memory saved plot for QA task
+│   └── SeqLen_512_Speedup_(%).png     # Speedup plot for QA task
+│
+├── token_classification/              # Token Classification task results
+│   ├── combined_plot.png              # Combined plot for token classification task
+│   ├── log_Bert_flash_attention_2_token_classification.csv  # Benchmark results for token classification task using FlashAttention2
+│   ├── log_Bert_sdpa_token_classification.csv        # Benchmark results for token classification task using SDPA
+│   ├── SeqLen_128_Mem_saved_(%).png   # Memory saved plot for token classification task
+│   ├── SeqLen_128_Speedup_(%).png     # Speedup plot for token classification task
+│   ├── SeqLen_256_Mem_saved_(%).png   # Memory saved plot for token classification task
+│   ├── SeqLen_256_Speedup_(%).png     # Speedup plot for token classification task
+│   ├── SeqLen_512_Mem_saved_(%).png   # Memory saved plot for token classification task
+│   └── SeqLen_512_Speedup_(%).png     # Speedup plot for token classification task
+│
+├── results/                           # Benchmark results
+│   ├── log_Bert_flash_attention_2_classification.csv  # Benchmark results for classification task using FlashAttention2
+│   ├── log_Bert_flash_attention_2_mlm.csv            # Benchmark results for MLM task using FlashAttention2
+│   ├── log_Bert_flash_attention_2_qa.csv             # Benchmark results for QA task using FlashAttention2
+│   ├── log_Bert_flash_attention_2_token_classification.csv  # Benchmark results for token classification task using FlashAttention2
+│   ├── log_Bert_sdpa_classification.csv              # Benchmark results for classification task using SDPA
+│   ├── log_Bert_sdpa_mlm.csv                        # Benchmark results for MLM task using SDPA
+│   ├── log_Bert_sdpa_qa.csv                         # Benchmark results for QA task using SDPA
+│   └── log_Bert_sdpa_token_classification.csv        # Benchmark results for token classification task using SDPA
+│
+├── benchmark_Bert.py                  # Python script for benchmarking BERT models
+├── plot.py                            # Python script for plotting benchmark results using csv files in the results directory
+├── run_Bert.sh                        # Shell script for running the benchmarking script
+├── .gitignore                         # Specifies intentionally untracked files to ignore
+├── LICENSE                            # The LICENSE file
+└── README.md                          # The top-level README for developers using this project
+
+
 - HPML_BERT_BENCHMARKING/
   - classification/
     - combined_plot.png                          # Combined plot for classification task
