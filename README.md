@@ -1,13 +1,8 @@
 # Transformers
 
-We submitted another Github Repo, which is forked and modified based on the official HuggingFace Transformer Library. Therefore, we won't modify the README in that directory as the usecase should be exactly the same as the original Transformers. We noted the files that we made changes to here for your reference:
+We submitted another Github Repo, which is forked and modified based on the official HuggingFace Transformer Library. Therefore, we won't modify the README in that directory as the usecase should be exactly the same as the original Transformers. We noted the main files that we made changes to here for your reference:
 
-    -  src/transformers/models/align/modeling_align.py
-    -  src/transformers/models/altclip/modeling_altclip.py
     -  src/transformers/models/bert/modeling_bert.py
-    -  src/transformers/models/bert_generation/modeling_bert_generation.py
-    -  src/transformers/models/bridgetower/modeling_bridgetower.py
-    -  src/transformers/models/camembert/modeling_camembert.py
     -  tests/models/bert/test_modeling_bert.py
 
 
